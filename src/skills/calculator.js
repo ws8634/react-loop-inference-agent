@@ -56,6 +56,24 @@ class CalculatorSkill {
     return openCount;
   }
 
+  _maxParenthesesDepth(tokens) {
+    let maxDepth = 0;
+    let currentDepth = 0;
+    
+    for (const token of tokens) {
+      if (token.type === 'operator' && token.value === '(') {
+        currentDepth++;
+        if (currentDepth > maxDepth) {
+          maxDepth = currentDepth;
+        }
+      } else if (token.type === 'operator' && token.value === ')') {
+        currentDepth--;
+      }
+    }
+    
+    return maxDepth;
+  }
+
   _evaluateSimple(tokens) {
     let numbers = [];
     let operators = [];
@@ -175,6 +193,14 @@ class CalculatorSkill {
         return {
           success: false,
           error: '括号不匹配'
+        };
+      }
+
+      const maxDepth = this._maxParenthesesDepth(tokens);
+      if (maxDepth > 1) {
+        return {
+          success: false,
+          error: '只支持最多一层括号，不支持嵌套括号'
         };
       }
 

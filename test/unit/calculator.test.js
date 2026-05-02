@@ -158,6 +158,27 @@ describe('CalculatorSkill', function() {
       expect(result.success).to.be.false;
       expect(result.error).to.include('空括号');
     });
+
+    it('应该拒绝嵌套括号', async function() {
+      const result = await skill.execute({ expression: '((1 + 2))' });
+      
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('不支持嵌套括号');
+    });
+
+    it('应该拒绝嵌套括号 2', async function() {
+      const result = await skill.execute({ expression: '1 + ((2 + 3) * 4)' });
+      
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('不支持嵌套括号');
+    });
+
+    it('应该拒绝嵌套括号 3', async function() {
+      const result = await skill.execute({ expression: '((1))' });
+      
+      expect(result.success).to.be.false;
+      expect(result.error).to.include('不支持嵌套括号');
+    });
   });
 
   describe('反向用例 - 无效表达式', function() {

@@ -1,5 +1,5 @@
 const { ThinkingAgent, EXIT_CODES } = require('./agent');
-const { createBrain, getAvailableTypes, FakeBrain, LLMBrain } = require('./brain');
+const { createBrain, getAvailableTypes, FakeBrain, LLMBrain, LoopBrain } = require('./brain');
 const { 
   SkillRegistry, 
   defaultRegistry, 
@@ -14,6 +14,7 @@ module.exports = {
   getAvailableTypes,
   FakeBrain,
   LLMBrain,
+  LoopBrain,
   SkillRegistry,
   defaultRegistry,
   MemoryFileSkill,

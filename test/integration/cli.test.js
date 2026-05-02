@@ -16,12 +16,13 @@ describe('CLI 集成测试', function() {
       expect(result.stdout.toString()).to.include('用法');
     });
 
-    it('--types 应该列出模型类型', function() {
+    it('--types 应该列出模型类型（包括 loop）', function() {
       const result = spawnSync(NODE_BIN, [CLI_PATH, '--types']);
       
       expect(result.status).to.equal(0);
       expect(result.stdout.toString()).to.include('fake');
       expect(result.stdout.toString()).to.include('llm');
+      expect(result.stdout.toString()).to.include('loop');
     });
 
     it('没有输入应该返回错误', function() {
@@ -75,46 +76,20 @@ describe('CLI 集成测试', function() {
     });
   });
 
-  describe('返回码测试', function() {
+  describe('返回码测试 - 使用真实子进程', function() {
     it('正常完成应该返回 0', function() {
       const result = spawnSync(NODE_BIN, [CLI_PATH, '测试']);
       expect(result.status).to.equal(0);
     });
 
-    it('达到最大迭代次数应该返回 1', function() {
-      class TestBrain {
-        constructor() {
-          this.name = 'test';
-        }
-        isConfigured() { return true; }
-        async think(state) {
-          return {
-            type: 'think',
-            content: '继续思考...'
-          };
-        }
-      }
-
-      const TestThinkingAgent = require('../../src/agent').ThinkingAgent;
-      const { EXIT_CODES } = require('../../src/agent');
+    it('使用 loop brain + -m 2 应该返回 1 并输出迭代超限警告', function() {
+      const result = spawnSync(NODE_BIN, [CLI_PATH, '-b', 'loop', '-m', '2', '测试']);
+      const output = result.stdout.toString();
       
-      class TestAgent extends TestThinkingAgent {
-        async init() {
-          this.brain = new TestBrain();
-        }
-      }
-
-      return (async () => {
-        const agent = new TestAgent({
-          maxIterations: 2,
-          logger: { log: () => {} }
-        });
-
-        const result = await agent.run('测试');
-        expect(result.exitCode).to.equal(EXIT_CODES.MAX_ITERATIONS);
-        expect(result.reason).to.equal('max_iterations_reached');
-        expect(result.success).to.be.false;
-      })();
+      expect(result.status).to.equal(1);
+      expect(output).to.include('[警告]');
+      expect(output).to.include('达到最大迭代次数');
+      expect(output).to.include('2');
     });
 
     it('无效输入应该返回 2', function() {
@@ -127,6 +102,55 @@ describe('CLI 集成测试', function() {
       
       expect(result.status).to.equal(3);
       expect(result.stderr.toString()).to.include('模型没配上');
+    });
+  });
+
+  describe('工具拒绝测试 - 使用真实子进程', function() {
+    it('memory_file 脏路径被拒应该在 stdout 输出拒绝信息', function() {
+      const dirtyPathInput = ':::memory_file:::{"filename":"../secret.txt"}';
+      const result = spawnSync(NODE_BIN, [CLI_PATH, dirtyPathInput]);
+      const output = result.stdout.toString();
+      
+      expect(result.status).to.equal(0);
+      expect(output).to.include('[工具调用]');
+      expect(output).to.include('memory_file');
+      expect(output).to.include('[工具结果]');
+      expect(output).to.include('非法的文件路径');
+      expect(output).to.include('任务失败');
+    });
+
+    it('memory_file 绝对路径被拒应该在 stdout 输出拒绝信息', function() {
+      const dirtyPathInput = ':::memory_file:::{"filename":"/etc/passwd"}';
+      const result = spawnSync(NODE_BIN, [CLI_PATH, dirtyPathInput]);
+      const output = result.stdout.toString();
+      
+      expect(result.status).to.equal(0);
+      expect(output).to.include('非法的文件路径');
+    });
+
+    it('calculator 除零被拒应该在 stdout 输出拒绝信息', function() {
+      const divByZeroInput = ':::calculator:::{"expression":"10 / 0"}';
+      const result = spawnSync(NODE_BIN, [CLI_PATH, divByZeroInput]);
+      const output = result.stdout.toString();
+      
+      expect(result.status).to.equal(0);
+      expect(output).to.include('[工具调用]');
+      expect(output).to.include('calculator');
+      expect(output).to.include('[工具结果]');
+      expect(output).to.include('除零错误');
+      expect(output).to.include('任务失败');
+    });
+
+    it('calculator 嵌套括号被拒应该在 stdout 输出拒绝信息', function() {
+      const nestedParenInput = ':::calculator:::{"expression":"((1 + 2))"}';
+      const result = spawnSync(NODE_BIN, [CLI_PATH, nestedParenInput]);
+      const output = result.stdout.toString();
+      
+      expect(result.status).to.equal(0);
+      expect(output).to.include('[工具调用]');
+      expect(output).to.include('calculator');
+      expect(output).to.include('不支持嵌套括号');
+      expect(output).to.include('任务失败');
     });
   });
 

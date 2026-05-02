@@ -12,9 +12,25 @@ class FakeBrain {
     const lastAction = history.length > 0 ? history[history.length - 1] : null;
 
     if (lastAction && lastAction.type === 'tool_result') {
+      if (lastAction.success) {
+        return {
+          type: 'finish',
+          content: `任务完成。根据工具执行结果：${lastAction.result}`
+        };
+      } else {
+        return {
+          type: 'finish',
+          content: `任务失败。工具执行错误：${lastAction.error}`
+        };
+      }
+    }
+
+    const directCall = this._parseDirectCall(input);
+    if (directCall) {
       return {
-        type: 'finish',
-        content: `任务完成。根据工具执行结果：${lastAction.result}`
+        type: 'tool_call',
+        tool: directCall.tool,
+        params: directCall.params
       };
     }
 
@@ -112,6 +128,23 @@ class FakeBrain {
       }
     }
     return null;
+  }
+
+  _parseDirectCall(input) {
+    const pattern = /^:::([a-zA-Z0-9_]+):::(.+)$/;
+    const match = input.match(pattern);
+    
+    if (!match) {
+      return null;
+    }
+
+    const tool = match[1];
+    try {
+      const params = JSON.parse(match[2]);
+      return { tool, params };
+    } catch {
+      return null;
+    }
   }
 }
 

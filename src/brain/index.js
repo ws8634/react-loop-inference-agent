@@ -1,9 +1,11 @@
 const FakeBrain = require('./fake');
 const LLMBrain = require('./llm');
+const LoopBrain = require('./loop');
 
 const BRAIN_TYPES = {
   fake: FakeBrain,
-  llm: LLMBrain
+  llm: LLMBrain,
+  loop: LoopBrain
 };
 
 function createBrain(type = 'fake', config = {}) {
@@ -22,5 +24,6 @@ module.exports = {
   createBrain,
   getAvailableTypes,
   FakeBrain,
-  LLMBrain
+  LLMBrain,
+  LoopBrain
 };
