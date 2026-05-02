@@ -1,0 +1,23 @@
+{
+  "name": "thinking-loop-agent",
+  "version": "1.0.0",
+  "description": "A simple thinking loop agent with fake tools and LLM interface hook",
+  "main": "src/index.js",
+  "bin": {
+    "agent": "src/cli.js"
+  },
+  "scripts": {
+    "test": "mocha --quiet test/**/*.test.js",
+    "test:watch": "mocha --watch test/**/*.test.js"
+  },
+  "keywords": ["agent", "llm", "thinking-loop"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "^10.2.0",
+    "chai": "^4.3.10"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
